@@ -237,6 +237,93 @@ function eventsForTurn(events, promptEvent) {
   return { promptIdCorrelated, timeWindowCorrelated }
 }
 
+/**
+ * Token usage for a completed turn, computed from Claude Code's own session
+ * transcript (never from Hook events, which carry no usage data at all).
+ *
+ * Deliberately restricted to turns that have already completed (a `Stop`
+ * event observed) because the transcript file is written asynchronously —
+ * reading it for a turn still in progress risks an undercount from lines not
+ * yet flushed to disk (see docs/limitations.md). For an already-completed
+ * turn this risk does not apply: by the time a report command runs, the
+ * transcript has long since caught up.
+ */
+function emptyUsageBucket() {
+  return { messageCount: 0, inputTokens: 0, outputTokens: 0, cacheCreationInputTokens: 0, cacheReadInputTokens: 0 }
+}
+
+function addUsageToBucket(bucket, usage) {
+  bucket.messageCount += 1
+  bucket.inputTokens += Number(usage.input_tokens) || 0
+  bucket.outputTokens += Number(usage.output_tokens) || 0
+  bucket.cacheCreationInputTokens += Number(usage.cache_creation_input_tokens) || 0
+  bucket.cacheReadInputTokens += Number(usage.cache_read_input_tokens) || 0
+}
+
+/** First observed `transcriptPath` among the turn's own events (older logs captured before this field existed will have none). */
+function findTranscriptPath(promptEvent, promptIdCorrelated, timeWindowCorrelated) {
+  const candidates = [promptEvent, ...promptIdCorrelated, ...timeWindowCorrelated]
+  for (const ev of candidates) {
+    if (ev && typeof ev.transcriptPath === 'string' && ev.transcriptPath) return ev.transcriptPath
+  }
+  return null
+}
+
+/** The turn's own `Stop` event timestamp, i.e. observed proof the turn actually finished. */
+function findTurnEndTimestamp(promptIdCorrelated, timeWindowCorrelated) {
+  const stopEvent = [...promptIdCorrelated, ...timeWindowCorrelated].find((ev) => ev.event === 'Stop')
+  return stopEvent ? stopEvent.timestamp : null
+}
+
+/**
+ * Sums the Claude API `usage` block (input/output/cache tokens) off every
+ * assistant transcript line whose timestamp falls inside [promptEvent.timestamp,
+ * turnEndTimestamp]. Main-chain and Subagent (`isSidechain: true`) messages are
+ * summed into separate buckets — a Subagent's tokens are real API calls too,
+ * but attributing them to "this turn" vs. "a sub-task" is a scoping choice a
+ * report should make explicit, not silently merge.
+ *
+ * Returns `{ available: false, reason }` — never a guessed number — when any
+ * precondition for a trustworthy read is not met.
+ */
+function computeTokenUsageForTurn(promptEvent, promptIdCorrelated, timeWindowCorrelated) {
+  if (!promptEvent) return { available: false, reason: 'no_prompt_event' }
+
+  const transcriptPath = findTranscriptPath(promptEvent, promptIdCorrelated, timeWindowCorrelated)
+  if (!transcriptPath) return { available: false, reason: 'transcript_path_not_captured' }
+
+  const endTimestamp = findTurnEndTimestamp(promptIdCorrelated, timeWindowCorrelated)
+  if (!endTimestamp) return { available: false, reason: 'turn_not_completed' }
+
+  let content
+  try {
+    content = fs.readFileSync(transcriptPath, 'utf8')
+  } catch (err) {
+    debugLog(`could not read transcript at ${transcriptPath}: ${err && err.message}`)
+    return { available: false, reason: 'transcript_unreadable' }
+  }
+
+  const startTimestamp = promptEvent.timestamp
+  const main = emptyUsageBucket()
+  const subagent = emptyUsageBucket()
+
+  for (const line of content.split(/\r?\n/)) {
+    if (!line.trim()) continue
+    const parsed = safeJSONParse(line)
+    if (!parsed.ok) continue
+    const entry = parsed.value
+    if (!entry || entry.type !== 'assistant') continue
+    const ts = entry.timestamp
+    if (typeof ts !== 'string' || ts < startTimestamp || ts > endTimestamp) continue
+    const usage = entry.message && entry.message.usage
+    if (!usage || typeof usage !== 'object') continue
+    if (entry.isSidechain) addUsageToBucket(subagent, usage)
+    else addUsageToBucket(main, usage)
+  }
+
+  return { available: true, transcriptPath, startTimestamp, endTimestamp, main, subagent }
+}
+
 function dirSizeBytes(dir) {
   let total = 0
   let entries
@@ -330,7 +417,8 @@ function main() {
       const prompts = findLastPrompts(events, requestedCount)
       const turns = prompts.map((promptEvent) => {
         const { promptIdCorrelated, timeWindowCorrelated } = eventsForTurn(events, promptEvent)
-        return { prompt: promptEvent, promptIdCorrelated, timeWindowCorrelated }
+        const tokenUsage = computeTokenUsageForTurn(promptEvent, promptIdCorrelated, timeWindowCorrelated)
+        return { prompt: promptEvent, promptIdCorrelated, timeWindowCorrelated, tokenUsage }
       })
       printJSON({ requestedCount: Number.isFinite(requestedCount) && requestedCount > 0 ? Math.floor(requestedCount) : 1, returnedCount: turns.length, turns })
       return
@@ -366,7 +454,8 @@ function main() {
         return
       }
       const { promptIdCorrelated, timeWindowCorrelated } = eventsForTurn(events, promptEvent)
-      printJSON({ prompt: promptEvent, promptIdCorrelated, timeWindowCorrelated })
+      const tokenUsage = computeTokenUsageForTurn(promptEvent, promptIdCorrelated, timeWindowCorrelated)
+      printJSON({ prompt: promptEvent, promptIdCorrelated, timeWindowCorrelated, tokenUsage })
       return
     }
     default:
@@ -391,6 +480,7 @@ module.exports = {
   listPrompts,
   findPromptBySessionAndTimestamp,
   eventsForTurn,
+  computeTokenUsageForTurn,
   buildStatus,
   isMasonReportInvocation,
   isTaskNotification,

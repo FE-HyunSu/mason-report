@@ -179,6 +179,9 @@ function buildEnvelope(input, projectRoot) {
   const sessionId = typeof input.session_id === 'string' ? input.session_id : undefined
   const promptId = typeof input.prompt_id === 'string' ? input.prompt_id : undefined
   const cwd = typeof input.cwd === 'string' ? input.cwd : undefined
+  // Path only, never read/parsed here — lets read-events.js later look up this
+  // turn's token usage from Claude Code's own transcript (see docs/event-schema.md).
+  const transcriptPath = typeof input.transcript_path === 'string' ? input.transcript_path : undefined
 
   // Accumulates the true number of masking substitutions made while building
   // `data` below (field-level masking already replaces secrets with the mask
@@ -273,6 +276,7 @@ function buildEnvelope(input, projectRoot) {
     sessionId,
     promptId,
     cwd,
+    transcriptPath,
     source: 'claude-code-hook',
     data,
     redaction: { applied: true, count: counter.count },

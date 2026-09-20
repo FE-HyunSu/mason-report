@@ -41,8 +41,21 @@ mason-report는 관찰 가능한 실행 증거만으로 동작한다. 아래 한
   폴백은 계속 유지한다.
 - **transcript 비동기 기록**: `transcript_path`가 가리키는 파일은 비동기로 기록되어
   현재 턴의 최신 메시지를 아직 반영하지 않을 수 있다. 이 플러그인은 이 문제를 피하기
-  위해 `Stop`/`SubagentStop`의 `last_assistant_message` 필드에 의존하며, transcript
-  파일 자체를 직접 파싱하지 않는다.
+  위해 `Stop`/`SubagentStop`의 `last_assistant_message` 필드에 의존하며, "방금 끝난
+  턴"의 transcript는 직접 파싱하지 않는다. 다만 토큰 사용량 계산(`computeTokenUsageForTurn`,
+  `docs/event-schema.md` 참고)은 예외다 — `Stop` 이벤트가 이미 관찰된, 즉 시간이 지난
+  **완료된 과거 턴**에 한해서만 transcript를 읽으므로 이 비동기 위험이 적용되지 않는다.
+  아직 `Stop`이 관찰되지 않은 턴에 대해서는 토큰 사용량을 계산하지 않고 "확인 불가"로
+  남긴다.
+- **토큰 사용량은 이 기능 도입 이후 기록된 로그에만 존재함**: `transcriptPath` 필드는
+  이 기능 추가 이전에 캡처된 이벤트에는 없다. 그런 옛 로그를 대상으로 한 턴은
+  `transcript_path_not_captured` 사유로 토큰 사용량이 "확인 불가"로 표시된다 — 계산이
+  실패했다는 뜻이 아니라, 애초에 계산에 필요한 정보가 로그에 없다는 뜻이다.
+- **Subagent 토큰 포함 여부는 항상 명시적으로 분리**: 같은 턴 안에서 Task tool로 실행된
+  Subagent가 있으면, 그 Subagent가 소비한 토큰은 transcript에서 `isSidechain: true`로
+  구분된다. mason-report는 이를 메인 대화 토큰과 합산하지 않고 항상 별도 항목으로
+  보고한다 — "이 턴이 쓴 토큰"의 정의(메인만? Subagent 포함?)는 사용자가 리포트를 읽을
+  때 직접 판단해야 하는 부분이기 때문이다.
 - **로컬 실행 환경 미검증**: 이 리포지토리를 만든 환경에는 실제로 동작하는 Claude Code
   CLI 바이너리가 설치되어 있지 않았다(npm wrapper 패키지만 존재, 네이티브 바이너리는
   placeholder 상태). 따라서 실제 Claude Code 세션에서 Hook이 이 스크립트를 정확히 이

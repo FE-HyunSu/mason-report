@@ -64,6 +64,25 @@ test('buildEnvelope: SessionStart', () => {
   assert.equal(env.data.source, 'startup')
 })
 
+test('buildEnvelope: captures transcript_path as-is (path only, never read) when present', () => {
+  const env = buildEnvelope(
+    {
+      session_id: 's1',
+      cwd: '/proj',
+      hook_event_name: 'UserPromptSubmit',
+      prompt: 'hello',
+      transcript_path: '/Users/someone/.claude/projects/-proj/s1.jsonl',
+    },
+    '/proj'
+  )
+  assert.equal(env.transcriptPath, '/Users/someone/.claude/projects/-proj/s1.jsonl')
+})
+
+test('buildEnvelope: omits transcriptPath as undefined when transcript_path is absent (older Claude Code / hook without the field)', () => {
+  const env = buildEnvelope({ session_id: 's1', cwd: '/proj', hook_event_name: 'SessionStart', source: 'startup' }, '/proj')
+  assert.equal(env.transcriptPath, undefined)
+})
+
 test('buildEnvelope: UserPromptSubmit masks secrets in the prompt', () => {
   const env = buildEnvelope(
     {

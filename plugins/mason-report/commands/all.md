@@ -55,6 +55,11 @@ allowed-tools: Bash, Read
 
 5. 로그만으로 확인할 수 없는 부분(예: `promptId`가 없어 시간 구간으로만 연결된 이벤트, 아직
    transcript에 반영되지 않았을 수 있는 항목)은 반드시 `unknown` 또는 명시적 한계로 표시한다.
+   턴별 불릿에 붙는 `(observed)` / `(inferred)` / `(unknown)` 태그는, 한국어로 리포트를
+   쓸 때 `(observed, 로그로 확인된 것)` / `(inferred, 정황상 추정된 것)` /
+   `(unknown, 로그만으로 확인 불가)`처럼 한글 표기를 함께 붙인다(다른 언어로 작성하는
+   경우는 제외 — `SKILL.md` 참고). 가독성을 위해 태그는 행동 설명과 같은 줄에 붙이지
+   않고, 줄바꿈 후 들여쓴 다음 줄에 적는다.
 
 # 출력 형식
 
@@ -72,7 +77,8 @@ allowed-tools: Bash, Read
 ## 턴 1
 > "<프롬프트 1 원문 또는 핵심 요약>"
 
-- <호출된 Tool, 수정한 파일, Subagent 사용, 실패 여부 등을 짧은 불릿으로> (observed/inferred/unknown)
+- <호출된 Tool, 수정한 파일, Subagent 사용, 실패 여부 등을 짧은 불릿으로>
+  (observed, 로그로 확인된 것 / inferred, 정황상 추정된 것 / unknown, 로그만으로 확인 불가 중 하나)
 
 **프롬프트 문구 → 트리거 매핑**
 
@@ -83,7 +89,8 @@ allowed-tools: Bash, Read
 ## 턴 2
 > "<프롬프트 2>"
 
-- <설명> (observed/inferred/unknown)
+- <설명>
+  (observed, 로그로 확인된 것 / inferred, 정황상 추정된 것 / unknown, 로그만으로 확인 불가 중 하나)
 
 **프롬프트 문구 → 트리거 매핑**
 

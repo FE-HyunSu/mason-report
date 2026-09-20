@@ -14,6 +14,7 @@ mason-report는 Claude Code 공식 Hook 이벤트의 원본 페이로드를 그�
   "sessionId": "session-id",
   "promptId": "prompt-id",
   "cwd": "/project/path",
+  "transcriptPath": "/absolute/path/to/session-transcript.jsonl",
   "source": "claude-code-hook",
   "data": {},
   "redaction": { "applied": true, "count": 0 }
@@ -37,6 +38,11 @@ mason-report는 Claude Code 공식 Hook 이벤트의 원본 페이로드를 그�
 - `redaction.count`는 `capture-event.js`가 마스킹 규칙을 적용해 치환한 총 횟수다. 0이면
   "이 이벤트에서 마스킹 대상이 발견되지 않았다"는 뜻이지 "마스킹 로직이 비활성화됐다"는
   뜻이 아니다.
+- `transcriptPath`는 Hook 공통 필드 `transcript_path`를 **경로 문자열 그대로** 저장한
+  것이다 — `capture-event.js`는 이 파일을 절대 읽거나 파싱하지 않는다. `read-events.js`가
+  나중에(리포트 생성 시점에) 이 경로를 열어 완료된 턴의 토큰 사용량(`usage`)을 계산하는
+  용도로만 쓰인다. 이 필드는 이 기능이 추가되기 전에 기록된 기존 로그에는 없으므로,
+  옛 로그를 대상으로 한 턴은 토큰 사용량이 "확인 불가"로 남는다.
 
 ## 이벤트별 `data` 필드
 
@@ -150,6 +156,43 @@ vs `error`)은 공식 문서에서 명시적으로 확인하지 못했다. `capt
 `last_assistant_message` on Stop and SubagentStop"). `Stop` 이벤트 자체의 전체 입력 JSON
 예시는 문서에서 직접 인용하지 못했으므로, 이 필드 외의 추가 필드가 있을 수 있다는 점을
 `unknown`으로 남겨둔다.
+
+## 토큰 사용량 계산 (transcript 기반)
+
+Hook 이벤트에는 토큰/비용 데이터가 전혀 없다 — 위 이벤트별 `data` 필드 목록 어디에도
+그런 값은 존재하지 않는다. 대신 `read-events.js`의 `computeTokenUsageForTurn`은 **완료된
+턴에 한해**, `transcriptPath`가 가리키는 Claude Code 세션 transcript(JSONL) 파일을 직접
+읽어 실제 API 사용량을 계산한다. transcript의 각 줄 중 `"type": "assistant"`인 항목은
+다음과 같은 실측 `usage` 필드를 담고 있다(실제 세션 파일을 열어 확인한 스키마):
+
+```json
+{
+  "type": "assistant",
+  "timestamp": "ISO-8601",
+  "isSidechain": false,
+  "message": {
+    "usage": {
+      "input_tokens": 2,
+      "output_tokens": 85,
+      "cache_creation_input_tokens": 9354,
+      "cache_read_input_tokens": 38990
+    }
+  }
+}
+```
+
+- **집계 범위**: 턴의 시작(`UserPromptSubmit.timestamp`)부터 끝(`Stop.timestamp`)까지 시간
+  구간에 속한 `assistant` 항목만 합산한다. `Stop` 이벤트가 관찰되지 않은(아직 진행 중인)
+  턴은 계산하지 않는다 — transcript 파일은 비동기로 기록되므로, 막 끝난 턴을 그 즉시
+  읽으면 마지막 몇 줄이 아직 반영되지 않아 과소집계될 위험이 있다(`docs/limitations.md`
+  참고). 이미 완료되어 시간이 지난 턴을 조회할 때는 이 위험이 없다.
+- **Main-chain vs Subagent**: `isSidechain: true`인 항목(Task tool로 실행된 Subagent의
+  응답)은 별도 버킷으로 합산한다 — 메인 대화 토큰과 합쳐서 하나의 숫자로 뭉개지 않는다.
+- **캐시 토큰은 별도 카테고리**: `cache_creation_input_tokens`/`cache_read_input_tokens`는
+  `input_tokens`(새로 처리된 프롬프트 토큰)와 과금·의미가 다르므로 항상 별도 필드로
+  유지하고, 리포트에서도 하나의 "총합"으로 뭉치지 않는다.
+- 이 값은 실제 API 응답에 찍힌 실측치이므로 Skill 활성화 등급처럼 "참고용 %"로 표현하지
+  않는다 — `observed` 등급의 정확한 숫자로 그대로 표기한다.
 
 ## 알 수 없는 이벤트
 

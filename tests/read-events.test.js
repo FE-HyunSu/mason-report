@@ -16,6 +16,7 @@ const {
   listPrompts,
   findPromptBySessionAndTimestamp,
   eventsForTurn,
+  computeTokenUsageForTurn,
   buildStatus,
   isMasonReportInvocation,
   isTaskNotification,
@@ -343,6 +344,99 @@ test('eventsForTurn correlates by promptId when present, and falls back to time 
 
   assert.equal(timeWindowCorrelated.length, 1)
   assert.ok(timeWindowCorrelated.includes(withoutPromptId))
+})
+
+test('computeTokenUsageForTurn: unavailable when no transcriptPath was captured on any event (older logs)', () => {
+  const prompt = { sessionId: 'a', promptId: 'p1', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:00:00.000Z' }
+  const stop = { sessionId: 'a', promptId: 'p1', event: 'Stop', timestamp: '2026-01-01T00:00:03.000Z' }
+  const result = computeTokenUsageForTurn(prompt, [stop], [])
+  assert.equal(result.available, false)
+  assert.equal(result.reason, 'transcript_path_not_captured')
+})
+
+test('computeTokenUsageForTurn: unavailable when the turn has not completed (no Stop event observed)', () => {
+  const prompt = {
+    sessionId: 'a',
+    promptId: 'p1',
+    event: 'UserPromptSubmit',
+    timestamp: '2026-01-01T00:00:00.000Z',
+    transcriptPath: '/does/not/matter.jsonl',
+  }
+  const result = computeTokenUsageForTurn(prompt, [], [])
+  assert.equal(result.available, false)
+  assert.equal(result.reason, 'turn_not_completed')
+})
+
+test('computeTokenUsageForTurn: unavailable when the transcript file cannot be read', () => {
+  const prompt = {
+    sessionId: 'a',
+    promptId: 'p1',
+    event: 'UserPromptSubmit',
+    timestamp: '2026-01-01T00:00:00.000Z',
+    transcriptPath: '/nonexistent/path/that/should/not/exist.jsonl',
+  }
+  const stop = { sessionId: 'a', promptId: 'p1', event: 'Stop', timestamp: '2026-01-01T00:00:03.000Z' }
+  const result = computeTokenUsageForTurn(prompt, [stop], [])
+  assert.equal(result.available, false)
+  assert.equal(result.reason, 'transcript_unreadable')
+})
+
+test('computeTokenUsageForTurn: sums main-chain and Subagent usage separately, inside the turn\'s time window only', () => {
+  const dir = makeTempDir()
+  try {
+    const transcriptPath = path.join(dir, 'session.jsonl')
+    const lines = [
+      // Before the turn starts: must be excluded.
+      { type: 'assistant', timestamp: '2025-12-31T23:59:59.000Z', isSidechain: false, message: { usage: { input_tokens: 999, output_tokens: 999 } } },
+      // Main-chain messages inside the window.
+      {
+        type: 'assistant',
+        timestamp: '2026-01-01T00:00:01.000Z',
+        isSidechain: false,
+        message: { usage: { input_tokens: 10, output_tokens: 20, cache_creation_input_tokens: 5, cache_read_input_tokens: 100 } },
+      },
+      {
+        type: 'assistant',
+        timestamp: '2026-01-01T00:00:02.000Z',
+        isSidechain: false,
+        message: { usage: { input_tokens: 3, output_tokens: 7 } },
+      },
+      // A Subagent (Task tool) message inside the window: counted separately.
+      {
+        type: 'assistant',
+        timestamp: '2026-01-01T00:00:02.500Z',
+        isSidechain: true,
+        message: { usage: { input_tokens: 50, output_tokens: 60 } },
+      },
+      // Non-assistant line: ignored.
+      { type: 'user', timestamp: '2026-01-01T00:00:02.700Z' },
+      // After the turn ends: must be excluded.
+      { type: 'assistant', timestamp: '2026-01-01T00:05:00.000Z', isSidechain: false, message: { usage: { input_tokens: 999, output_tokens: 999 } } },
+    ]
+    fs.writeFileSync(transcriptPath, lines.map((l) => JSON.stringify(l)).join('\n') + '\n', 'utf8')
+
+    const prompt = {
+      sessionId: 'a',
+      promptId: 'p1',
+      event: 'UserPromptSubmit',
+      timestamp: '2026-01-01T00:00:00.000Z',
+      transcriptPath,
+    }
+    const stop = { sessionId: 'a', promptId: 'p1', event: 'Stop', timestamp: '2026-01-01T00:00:03.000Z' }
+
+    const result = computeTokenUsageForTurn(prompt, [stop], [])
+    assert.equal(result.available, true)
+    assert.equal(result.main.messageCount, 2)
+    assert.equal(result.main.inputTokens, 13)
+    assert.equal(result.main.outputTokens, 27)
+    assert.equal(result.main.cacheCreationInputTokens, 5)
+    assert.equal(result.main.cacheReadInputTokens, 100)
+    assert.equal(result.subagent.messageCount, 1)
+    assert.equal(result.subagent.inputTokens, 50)
+    assert.equal(result.subagent.outputTokens, 60)
+  } finally {
+    cleanup(dir)
+  }
 })
 
 test('buildStatus reports a clear warning when no events have been captured yet', () => {

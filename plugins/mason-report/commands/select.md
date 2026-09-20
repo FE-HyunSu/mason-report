@@ -59,20 +59,26 @@ allowed-tools: Bash, Read, AskUserQuestion
    ```
 
    반환된 JSON은 `/mason-report:latest`의 `last-turns` 턴 항목과 동일한 구조
-   (`prompt`, `promptIdCorrelated`, `timeWindowCorrelated`)를 가진다. `error` 키가
+   (`prompt`, `promptIdCorrelated`, `timeWindowCorrelated`, `tokenUsage` — 이 턴이 실제로
+   소비한 토큰, `SKILL.md`의 "토큰 사용량" 절 참고)를 가진다. `error` 키가
    있으면(예: 사용자가 고른 항목과 실제 로그가 어긋난 경우) 그 사실을 그대로 보고하고
    중단한다.
 
 4. `plugins/mason-report/skills/decision-analysis/SKILL.md`에 정의된 분석 절차, Skill 활성화
    증거 등급(확인됨 / 강한 추정 / 약한 추정 / 관찰 안 됨), 등급→참고용
-   수치 변환, 프롬프트 문구→트리거 매핑 규칙을 이 턴에 그대로 적용한다. 이 Skill의
-   절차를 skip하지 말고 각 단계를 실제로 수행한다.
+   수치 변환, 프롬프트 문구→트리거 매핑 규칙, 토큰 사용량 표기 규칙을 이 턴에 그대로
+   적용한다. 이 Skill의 절차를 skip하지 말고 각 단계를 실제로 수행한다.
 
 5. 아래 출력 형식으로 보고서를 작성한다. 가독성을 위해 실행 흐름은 긴 문단이 아니라
    **짧은 시간순 불릿 목록**으로 쓰고, 트리거 판정은 **표(table)**로 분리한다. 각
-   불릿에는 반드시 `(observed)` / `(inferred)` / `(unknown)` 태그를 붙인다. "Claude가
-   이렇게 생각했다"처럼 단정하지 말고, "관찰된 행동을 보면 이렇게 판단한 것으로
-   추정된다"는 식으로만 서술한다. 트리거 매핑 표에 참고용 수치를 적을 때는 항상 등급
+   불릿에는 반드시 `(observed)` / `(inferred)` / `(unknown)` 태그를 붙이되, 한국어로
+   리포트를 쓸 때는 `(observed, 로그로 확인된 것)` / `(inferred, 정황상 추정된 것)` /
+   `(unknown, 로그만으로 확인 불가)`처럼 한글 표기를 함께 붙인다(다른 언어로 작성하는
+   경우는 제외 — `SKILL.md` 참고). **가독성을 위해 태그는 행동 설명과 같은 줄에 붙이지
+   않고, 줄바꿈 후 들여쓴 다음 줄에 적는다** — 아래 출력 형식 예시처럼 `- <행동 설명>`
+   다음 줄에 `  (observed, 로그로 확인된 것)`을 쓴다. "Claude가 이렇게 생각했다"처럼
+   단정하지 말고, "관찰된 행동을 보면 이렇게 판단한 것으로 추정된다"는 식으로만
+   서술한다. 트리거 매핑 표에 참고용 수치를 적을 때는 항상 등급
    이름과 함께 적고(예: "강한 추정 (~70%, 참고용)"), % 단독으로 쓰지 않는다.
    **관찰 안 됨은 %를 쓰지 않고 "알수없음"이라고만 적는다** — "0%"는 "관여하지
    않았음을 확인함"으로 오해되기 쉽다. 트리거 매핑 표는 `SKILL.md`의 "트리거 표기 형식"과
@@ -91,9 +97,12 @@ allowed-tools: Bash, Read, AskUserQuestion
 > "<선택된 프롬프트 원문 또는 핵심 요약>"
 
 **실행 흐름** (시간순)
-- <행동 1> (observed/inferred/unknown)
-- <행동 2> (observed/inferred/unknown)
-- <최종 답변이 위 행동과 일치하는지> (inferred/unknown)
+- <행동 1>
+  (observed, 로그로 확인된 것 / inferred, 정황상 추정된 것 / unknown, 로그만으로 확인 불가 중 하나)
+- <행동 2>
+  (observed, 로그로 확인된 것 / inferred, 정황상 추정된 것 / unknown, 로그만으로 확인 불가 중 하나)
+- <최종 답변이 위 행동과 일치하는지>
+  (inferred, 정황상 추정된 것 / unknown, 로그만으로 확인 불가 중 하나)
 
 **프롬프트 문구 → 트리거 매핑**
 
@@ -108,9 +117,22 @@ allowed-tools: Bash, Read, AskUserQuestion
 자체가 없다는 뜻이라 수치 대신 '알수없음'으로 표기함 — Claude의 내부 판단 확률에는
 접근할 수 없음.">
 
+**토큰 사용량**
+
+<`tokenUsage.available`이 true면 아래처럼 실측치를 그대로 적는다(참고용 %가 아님):
+- 메인 대화: input <inputTokens> · output <outputTokens> · cache 생성 <cacheCreationInputTokens> · cache 조회 <cacheReadInputTokens>
+  (observed, 로그로 확인된 것)
+- Subagent: <subagent 버킷이 전부 0이면 "없음", 아니면 메인과 같은 형식으로>
+
+false면 `reason`에 따라 다음 중 하나만 적고 숫자를 지어내지 않는다(모두 unknown, 로그만으로 확인 불가):
+- transcript_path_not_captured → "이 로그는 토큰 사용량 계산 기능이 추가되기 전에 기록되어 확인 불가"
+- turn_not_completed → "이 턴이 아직 완료되지 않아 계산하지 않음"
+- transcript_unreadable → "transcript 파일을 읽을 수 없어 확인 불가">
+
 ## 한계
 
 이 리포트는 실행 증거를 기반으로 재구성한 분석이며
 Claude의 비공개 내부 사고과정이 아니다. 표의 %는 등급을 참고용으로 표현한 것이며
-실측값이 아니다(관찰 안 됨은 '알수없음'으로 표기).
+실측값이 아니다(관찰 안 됨은 '알수없음'으로 표기). 토큰 사용량은 등급이 아니라 transcript에
+찍힌 실측치를 그대로 적은 것이다.
 ```
