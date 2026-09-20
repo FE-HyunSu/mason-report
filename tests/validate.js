@@ -15,7 +15,7 @@ const path = require('path')
 const { execFileSync, spawnSync } = require('child_process')
 
 const ROOT = path.join(__dirname, '..')
-const PLUGIN_DIR = path.join(ROOT, 'plugins', 'mason-recap')
+const PLUGIN_DIR = path.join(ROOT, 'plugins', 'mason-report')
 
 const SUPPORTED_HOOK_EVENTS = new Set([
   'SessionStart',

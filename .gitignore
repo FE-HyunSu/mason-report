@@ -10,8 +10,13 @@ Thumbs.db
 .vscode/
 .idea/
 
-# mason-recap local logs (this repo can itself be opened as a Claude Code
+# mason-report local logs (this repo can itself be opened as a Claude Code
 # project while developing/testing the plugin against itself)
+.mason-report/
+
+# Transitional: an already-running session's cached plugin install (pre-
+# rename) keeps writing here until it picks up the mason-report rename via
+# /reload-plugins. Safe to remove once no cached mason-recap install remains.
 .mason-recap/
 
 # scratch

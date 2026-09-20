@@ -1,14 +1,14 @@
 ---
-description: 그동안 입력했던 프롬프트 목록을 보여주고, 사용자가 직접 고른 프롬프트(턴)에 대해 mason-recap가 수집한 관찰 증거(observed)만으로 Mason Recap Report를 생성합니다. 숫자 인자로 몇 개의 최근 프롬프트를 후보로 보여줄지 지정할 수 있습니다(기본값 20).
+description: 그동안 입력했던 프롬프트 목록을 보여주고, 사용자가 직접 고른 프롬프트(턴)에 대해 mason-report가 수집한 관찰 증거(observed)만으로 Mason Report를 생성합니다. 숫자 인자로 몇 개의 최근 프롬프트를 후보로 보여줄지 지정할 수 있습니다(기본값 20).
 argument-hint: "[n]"
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
 # 목표
 
-`/mason-recap:latest`가 "가장 최근 턴"을 자동으로 고르는 것과 달리, 이 명령은 그동안
+`/mason-report:latest`가 "가장 최근 턴"을 자동으로 고르는 것과 달리, 이 명령은 그동안
 관찰된 프롬프트 중 **사용자가 직접 하나를 선택**하게 한 뒤, 그 턴만 분석한다.
-`.mason-recap/events/`에 기록된 로그만을 근거로 하며, Claude의 비공개 chain-of-thought는
+`.mason-report/events/`에 기록된 로그만을 근거로 하며, Claude의 비공개 chain-of-thought는
 조회하거나 요구하지 않는다.
 
 # 절차
@@ -24,7 +24,7 @@ allowed-tools: Bash, Read, AskUserQuestion
    `totalAvailable`(이 프로젝트에 기록된, 선택 가능한 프롬프트 전체 개수 — `returnedCount`
    보다 클 수 있음), `prompts`(최신순, 즉 배열의 0번째가 가장 최근 프롬프트)로 구성된다.
    `prompts`의 각 항목은 원본 `UserPromptSubmit` 이벤트이며 `sessionId`, `timestamp`,
-   `data.prompt`를 담고 있다. 이 목록은 이 플러그인 자신의 `/mason-recap:*` 호출은 이미
+   `data.prompt`를 담고 있다. 이 목록은 이 플러그인 자신의 `/mason-report:*` 호출은 이미
    제외하고 반환된다.
 
    `returnedCount`가 0이면: "선택할 수 있는 과거 프롬프트가 없다"는 사실을 그대로
@@ -48,7 +48,7 @@ allowed-tools: Bash, Read, AskUserQuestion
    - `totalAvailable`이 `returnedCount`보다 크면(즉 이번에 가져온 목록보다 더 오래된
      프롬프트가 남아 있으면), 마지막 "이전 프롬프트 더 보기" 이후에도 목록이 끝나면 그
      사실을 사용자에게 안내한다("이 목록에는 최근 N개만 포함되어 있고, 더 오래된
-     프롬프트가 있다 — 필요하면 `/mason-recap:select <더 큰 숫자>`로 다시 실행해 달라").
+     프롬프트가 있다 — 필요하면 `/mason-report:select <더 큰 숫자>`로 다시 실행해 달라").
      스스로 더 큰 숫자로 다시 호출하지 않는다.
 
 3. 사용자가 실제 프롬프트를 하나 선택하면, 그 프롬프트 이벤트의 `sessionId`와
@@ -58,12 +58,12 @@ allowed-tools: Bash, Read, AskUserQuestion
    node "${CLAUDE_PLUGIN_ROOT}/scripts/read-events.js" turn "<sessionId>" "<timestamp>"
    ```
 
-   반환된 JSON은 `/mason-recap:latest`의 `last-turns` 턴 항목과 동일한 구조
+   반환된 JSON은 `/mason-report:latest`의 `last-turns` 턴 항목과 동일한 구조
    (`prompt`, `promptIdCorrelated`, `timeWindowCorrelated`)를 가진다. `error` 키가
    있으면(예: 사용자가 고른 항목과 실제 로그가 어긋난 경우) 그 사실을 그대로 보고하고
    중단한다.
 
-4. `plugins/mason-recap/skills/decision-analysis/SKILL.md`에 정의된 분석 절차, Skill 활성화
+4. `plugins/mason-report/skills/decision-analysis/SKILL.md`에 정의된 분석 절차, Skill 활성화
    증거 등급(확인됨 / 강한 추정 / 약한 추정 / 관찰 안 됨), 등급→참고용
    수치 변환, 프롬프트 문구→트리거 매핑 규칙을 이 턴에 그대로 적용한다. 이 Skill의
    절차를 skip하지 말고 각 단계를 실제로 수행한다.
@@ -86,7 +86,7 @@ allowed-tools: Bash, Read, AskUserQuestion
 # 출력 형식
 
 ```markdown
-# Mason Recap Report (선택한 턴)
+# Mason Report (선택한 턴)
 
 > "<선택된 프롬프트 원문 또는 핵심 요약>"
 

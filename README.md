@@ -1,8 +1,8 @@
-# mason-recap
+# mason-report
 
 한국어 문서는 [README_ko.md](./README_ko.md)를 참고하세요.
 
-**mason-recap** is an open-source Claude Code plugin that observes Claude Code's execution through official Hooks and reconstructs how a request was handled — using only observable evidence (prompts, tool calls, file paths, subagent activity, the final answer). It never extracts Claude's private chain-of-thought, makes no network calls, and stores everything locally under your project's `.mason-recap/` directory.
+**mason-report** is an open-source Claude Code plugin that observes Claude Code's execution through official Hooks and reconstructs how a request was handled — using only observable evidence (prompts, tool calls, file paths, subagent activity, the final answer). It never extracts Claude's private chain-of-thought, makes no network calls, and stores everything locally under your project's `.mason-report/` directory.
 
 ---
 
@@ -32,8 +32,8 @@ npm install -g @anthropic-ai/claude-code
 
 | Where Claude Code is running | What to type | Where to type it |
 |---|---|---|
-| A normal terminal shell, Claude Code not already running interactively | `claude plugin marketplace add fe-hyunsu/mason-recap`, then `claude plugin install mason-recap@mason-recap` | Directly at the shell prompt — **no leading `/`**. These are ordinary CLI subcommands of the `claude` binary, not slash commands, so a plain shell understands them. |
-| Interactive terminal REPL (you already ran `claude` and are inside its own prompt) | `/plugin marketplace add fe-hyunsu/mason-recap`, then `/plugin install mason-recap@mason-recap` | Inside that session's own input box. |
+| A normal terminal shell, Claude Code not already running interactively | `claude plugin marketplace add fe-hyunsu/mason-report`, then `claude plugin install mason-report@mason` | Directly at the shell prompt — **no leading `/`**. These are ordinary CLI subcommands of the `claude` binary, not slash commands, so a plain shell understands them. |
+| Interactive terminal REPL (you already ran `claude` and are inside its own prompt) | `/plugin marketplace add fe-hyunsu/mason-report`, then `/plugin install mason-report@mason` | Inside that session's own input box. |
 | VS Code extension | `/plugins` (**plural** — `/plugin` singular is not available on this surface) | In the chat box; it opens a GUI dialog where you add the marketplace and install from there. |
 | A surface with no interactive UI at all (cloud sessions, headless/CI) | Declare it in `.claude/settings.json` (see below) | It's a config file, not something you type. |
 
@@ -43,10 +43,10 @@ npm install -g @anthropic-ai/claude-code
 
 2. Add the marketplace and install the plugin:
    ```bash
-   claude plugin marketplace add fe-hyunsu/mason-recap
-   claude plugin install mason-recap@mason-recap
+   claude plugin marketplace add fe-hyunsu/mason-report
+   claude plugin install mason-report@mason
    ```
-   The part before `@` is the **plugin name**; the part after `@` is the **marketplace name**. In this repo both happen to be the string `mason-recap` — that's a naming coincidence, not a rule, so don't read the repeated word as a typo.
+   The part before `@` is the **plugin name** (`mason-report`); the part after `@` is the **marketplace name** (`mason`) — this repo is a single-plugin marketplace, but the two names are independent identifiers, not the same thing.
 
 3. **Activate it in a session that's already open.** A shell-level install does not automatically show up in a Claude Code session you already had running (for example, a VS Code chat panel open before you ran the command above). Inside that already-open session, run:
    ```
@@ -56,7 +56,7 @@ npm install -g @anthropic-ai/claude-code
 
 4. **Verify it's actually active:**
    ```
-   /mason-recap:status
+   /mason-report:status
    ```
    If this returns a real status report instead of "unknown command," it's active.
 
@@ -65,9 +65,9 @@ npm install -g @anthropic-ai/claude-code
 Because `plugin.json`'s `version` field pins the plugin, a `git push` to this repo alone does **not** update anything you've already installed — you receive updates only when that version string changes, and only after you explicitly refresh:
 
 ```bash
-claude plugin marketplace update mason-recap
-claude plugin uninstall mason-recap@mason-recap
-claude plugin install mason-recap@mason-recap
+claude plugin marketplace update mason
+claude plugin uninstall mason-report@mason
+claude plugin install mason-report@mason
 ```
 
 (An uninstall-then-install is the most reliable way to pick up a new version cleanly; a plain re-`install` may just report "already installed.") Then `/reload-plugins` in any session that's already open.
@@ -79,12 +79,12 @@ Useful for team setups, or any environment without an interactive UI:
 ```json
 {
   "extraKnownMarketplaces": {
-    "mason-recap": {
-      "source": { "source": "github", "repo": "fe-hyunsu/mason-recap" }
+    "mason": {
+      "source": { "source": "github", "repo": "fe-hyunsu/mason-report" }
     }
   },
   "enabledPlugins": {
-    "mason-recap@mason-recap": true
+    "mason-report@mason": true
   }
 }
 ```
@@ -92,47 +92,47 @@ Useful for team setups, or any environment without an interactive UI:
 #### Testing locally without publishing anywhere
 
 ```bash
-claude plugin marketplace add ./path/to/mason-recap
-claude plugin install mason-recap@mason-recap
+claude plugin marketplace add ./path/to/mason-report
+claude plugin install mason-report@mason
 ```
 (the same shell-vs-REPL-vs-VS-Code distinction from the table above still applies)
 
 ### Commands
 
-**`/mason-recap:latest`** — reconstructs a report of the most recently completed user turn(s), using observed evidence only. Takes an optional number: no argument means the last 1 turn, a number means that many recent turns.
+**`/mason-report:latest`** — reconstructs a report of the most recently completed user turn(s), using observed evidence only. Takes an optional number: no argument means the last 1 turn, a number means that many recent turns.
 
 ```text
-/mason-recap:latest
-/mason-recap:latest 3
+/mason-report:latest
+/mason-report:latest 3
 ```
 
-Each turn's report has two parts: a short chronological bullet list of what actually happened (tagged `observed`/`inferred`/`unknown`), and a separate **prompt-phrase → trigger mapping table** showing which part of your prompt appears to have caused which Skill/rule/tool to fire, together with an evidence grade and a reference confidence-% band. The grade is one of four levels — shown as Korean words in the report itself (확인됨 "confirmed", 강한 추정 "strongly-inferred", 약한 추정 "weakly-inferred", 관찰 안 됨 "not-observed") regardless of which language you're conversing in. That % is always shown paired with the grade name — it's a visualization of the grade, not a measured probability, since mason-recap has no access to Claude's internal decision process. Invoking `/mason-recap:latest` (or `/mason-recap:select`/`/mason-recap:all`) itself is never counted as one of the analyzed turns.
+Each turn's report has two parts: a short chronological bullet list of what actually happened (tagged `observed`/`inferred`/`unknown`), and a separate **prompt-phrase → trigger mapping table** showing which part of your prompt appears to have caused which Skill/rule/tool to fire, together with an evidence grade and a reference confidence-% band. The grade is one of four levels — shown as Korean words in the report itself (확인됨 "confirmed", 강한 추정 "strongly-inferred", 약한 추정 "weakly-inferred", 관찰 안 됨 "not-observed") regardless of which language you're conversing in. That % is always shown paired with the grade name — it's a visualization of the grade, not a measured probability, since mason-report has no access to Claude's internal decision process. Invoking `/mason-report:latest` (or `/mason-report:select`/`/mason-report:all`) itself is never counted as one of the analyzed turns.
 
 See [examples/sample-report.md](./examples/sample-report.md) for the output format and a worked example.
 
-**`/mason-recap:select`** — instead of always analyzing the most recent turn, lets you pick which past prompt to analyze. Shows your recent prompts as a multiple-choice question (via Claude Code's `AskUserQuestion` tool) and generates the same single-turn report for whichever one you pick. Takes an optional number for how large a pool of recent prompts to offer (default 20); if there are more than 4 candidates, they're paged 3-at-a-time with a "show older prompts" option.
+**`/mason-report:select`** — instead of always analyzing the most recent turn, lets you pick which past prompt to analyze. Shows your recent prompts as a multiple-choice question (via Claude Code's `AskUserQuestion` tool) and generates the same single-turn report for whichever one you pick. Takes an optional number for how large a pool of recent prompts to offer (default 20); if there are more than 4 candidates, they're paged 3-at-a-time with a "show older prompts" option.
 
 ```text
-/mason-recap:select
-/mason-recap:select 50
+/mason-report:select
+/mason-report:select 50
 ```
 
-**`/mason-recap:all`** — summarizes the entire current session: turn list, tool usage patterns, failures, loaded instructions, estimated Skill usage, and so on.
+**`/mason-report:all`** — summarizes the entire current session: turn list, tool usage patterns, failures, loaded instructions, estimated Skill usage, and so on.
 
 ```text
-/mason-recap:all
+/mason-report:all
 ```
 
-**`/mason-recap:status`** — shows log collection status: location, most recent event, session count, whether masking has been applied, log size, supported hook events, and diagnostic warnings.
+**`/mason-report:status`** — shows log collection status: location, most recent event, session count, whether masking has been applied, log size, supported hook events, and diagnostic warnings.
 
 ```text
-/mason-recap:status
+/mason-report:status
 ```
 
 ### Logs
 
 ```text
-<project-root>/.mason-recap/
+<project-root>/.mason-report/
 ├── events/    # Hook event JSONL
 ├── reports/   # (reserved — for future report storage)
 ├── state/     # internal state (e.g. a marker for whether .gitignore was already patched)
@@ -144,10 +144,10 @@ No log is ever written to the plugin's install directory or plugin cache. If the
 To delete all logs for a project:
 
 ```bash
-rm -rf .mason-recap/
+rm -rf .mason-report/
 ```
 
-This is an ordinary file deletion you run yourself in your own project; `mason-recap` provides no remote-deletion feature or separate deletion API of its own.
+This is an ordinary file deletion you run yourself in your own project; `mason-report` provides no remote-deletion feature or separate deletion API of its own.
 
 ---
 
@@ -155,9 +155,9 @@ This is an ordinary file deletion you run yourself in your own project; `mason-r
 
 ### What it does and why
 
-`mason-recap` is an open-source Claude Code plugin that observes Claude Code's execution through **official Hooks**, and reconstructs — from that observed evidence alone — how Claude handled a given request. It makes no external LLM calls and runs no server: Claude Code itself reads the logs and writes the analysis report.
+`mason-report` is an open-source Claude Code plugin that observes Claude Code's execution through **official Hooks**, and reconstructs — from that observed evidence alone — how Claude handled a given request. It makes no external LLM calls and runs no server: Claude Code itself reads the logs and writes the analysis report.
 
-While handling one request, Claude Code calls multiple tools, reads or edits files, and sometimes spawns subagents. That process flashes by in the chat transcript and is hard to reconstruct precisely afterward — which files were actually touched, which instructions applied, why a particular approach was taken. `mason-recap` records the **observable** part of that execution locally, then later explains it from that record alone, carefully separating fact from inference.
+While handling one request, Claude Code calls multiple tools, reads or edits files, and sometimes spawns subagents. That process flashes by in the chat transcript and is hard to reconstruct precisely afterward — which files were actually touched, which instructions applied, why a particular approach was taken. `mason-report` records the **observable** part of that execution locally, then later explains it from that record alone, carefully separating fact from inference.
 
 ### What can be confirmed
 
@@ -183,7 +183,7 @@ While handling one request, Claude Code calls multiple tools, reads or edits fil
 
 See [docs/limitations.md](./docs/limitations.md) for the complete list.
 
-**mason-recap is not a tool for extracting or bypassing Claude's private internal reasoning.** Every analysis is grounded only in facts officially exposed through Hooks and the transcript. Reports are designed to never assert "Claude thought this," and instead phrase things as "based on the observed behavior, it appears Claude judged X" (see `skills/decision-analysis/SKILL.md`).
+**mason-report is not a tool for extracting or bypassing Claude's private internal reasoning.** Every analysis is grounded only in facts officially exposed through Hooks and the transcript. Reports are designed to never assert "Claude thought this," and instead phrase things as "based on the observed behavior, it appears Claude judged X" (see `skills/decision-analysis/SKILL.md`).
 
 ### How it works
 
@@ -193,10 +193,10 @@ User Prompt
   → Claude Agent Loop
   → Tool/Subagent Hooks
   → Stop Hook
-  → Local JSONL (.mason-recap/events/)
+  → Local JSONL (.mason-report/events/)
   → inspect Command
   → decision-analysis Skill
-  → Mason Recap Report
+  → Mason Report
 ```
 
 See [docs/architecture.md](./docs/architecture.md) for details.
@@ -216,8 +216,8 @@ The exact fields stored per event are defined in [docs/event-schema.md](./docs/e
 - API keys, access/bearer tokens, Authorization/Cookie headers, passwords, PEM/private keys, and AWS/GitHub/Anthropic/OpenAI-style tokens are masked before anything is written to disk.
 - Tool results are stored as safe, size-limited summaries, never as raw full output.
 - Log size and retention count are capped (roughly 5MB per file, with a cap on the number of files per project).
-- If `.mason-recap/` is a symlink pointing outside the project root, writes are refused.
-- If `.mason-recap/` is missing from `.gitignore`, it's added safely — existing content is preserved.
+- If `.mason-report/` is a symlink pointing outside the project root, writes are refused.
+- If `.mason-report/` is missing from `.gitignore`, it's added safely — existing content is preserved.
 - A hook failure, or an analysis failure, never blocks Claude Code's normal operation.
 
 See [docs/privacy.md](./docs/privacy.md) for details.
@@ -226,14 +226,14 @@ See [docs/privacy.md](./docs/privacy.md) for details.
 
 This plugin was built against the Plugin / Marketplace / Hooks / Skill specifications currently documented at `code.claude.com/docs/en/`.
 
-**On 2026-09-06, this plugin was installed into a real Claude Code instance (v2.1.178, VS Code extension + Agent SDK backend) via `claude plugin marketplace add` / `claude plugin install`, and verified end-to-end** by running `/reload-plugins` followed by `/mason-recap:status`. `SessionStart`, `UserPromptSubmit`, `PreToolUse`, and `PostToolUse` events were confirmed to be recorded correctly in `.mason-recap/events/`, and `sessionId`/`promptId` correlation, the masking pipeline, and project-relative path conversion were all confirmed against real, live logs.
+**On 2026-09-06, this plugin was installed into a real Claude Code instance (v2.1.178, VS Code extension + Agent SDK backend) via `claude plugin marketplace add` / `claude plugin install`, and verified end-to-end** by running `/reload-plugins` followed by `/mason-report:status`. `SessionStart`, `UserPromptSubmit`, `PreToolUse`, and `PostToolUse` events were confirmed to be recorded correctly in `.mason-report/events/`, and `sessionId`/`promptId` correlation, the masking pipeline, and project-relative path conversion were all confirmed against real, live logs.
 
 - Plugin/Marketplace/Hooks/Skill core structure: confirmed both in the docs and via a real install and load.
 - `prompt_id` (used for turn correlation) — the official docs state "requires Claude Code v2.1.196 or later," but **it was observed to be populated correctly on v2.1.178.** This documented minimum version requirement therefore does not match reality; the true minimum is left as unknown. The time-window-based fallback (for when `promptId` is absent) is still kept regardless.
 - The `UserPromptSubmit` prompt-text field name (`prompt`) was confirmed populated correctly in real logs (see [docs/event-schema.md](./docs/event-schema.md) for details).
 - `/reload-plugins` originally reported "1 error during load" with no visible cause in the VS Code extension. **Root cause found and fixed in v0.1.2**: `plugin.json` explicitly declared `"hooks": "./hooks/hooks.json"`, but that exact path is already auto-discovered by Claude Code by default — declaring it again made Claude Code treat it as a duplicate and (on a fresh install of a bumped version) fail to load the plugin entirely, reporting `Duplicate hooks file detected: ./hooks/hooks.json resolves to already-loaded file .../hooks/hooks.json`. The fix was simply removing the redundant `hooks` field from `plugin.json`; `tests/validate.js` now has a regression check for this specific mistake.
 
-Running `/mason-recap:status` after installing is the recommended way to directly confirm events are being collected correctly in your own environment.
+Running `/mason-report:status` after installing is the recommended way to directly confirm events are being collected correctly in your own environment.
 
 ### Known limitations
 
@@ -250,14 +250,14 @@ The full list is in [docs/limitations.md](./docs/limitations.md). Key points:
 If you're maintaining a fork or your own copy of this plugin:
 
 1. Push this repository to GitHub as a **public** repo (`.claude-plugin/marketplace.json` must sit at the repo root).
-2. Replace the `name`/`owner.name` in `.claude-plugin/marketplace.json`, and the `author`/`homepage`/`repository` fields in each plugin entry and in `plugins/mason-recap/.claude-plugin/plugin.json`, with your own values.
+2. Replace the `name`/`owner.name` in `.claude-plugin/marketplace.json`, and the `author`/`homepage`/`repository` fields in each plugin entry and in `plugins/mason-report/.claude-plugin/plugin.json`, with your own values.
 3. Tag releases explicitly (see the [release checklist](#release-checklist-tag-based-versioning) below).
 
 ### Development and testing
 
 ```bash
-git clone https://github.com/fe-hyunsu/mason-recap.git
-cd mason-recap
+git clone https://github.com/fe-hyunsu/mason-report.git
+cd mason-report
 
 npm test         # run unit/integration tests via Node's built-in test runner
 npm run validate # check the manifests/hooks.json/command & skill frontmatter/script syntax, then run tests
@@ -277,7 +277,7 @@ No external dependencies — only the Node.js standard library and `node:test`.
 
 - [ ] `npm test` and `npm run validate` pass
 - [ ] Changes recorded in `CHANGELOG.md`
-- [ ] `version` bumped together in `.claude-plugin/marketplace.json` and `plugins/mason-recap/.claude-plugin/plugin.json`
+- [ ] `version` bumped together in `.claude-plugin/marketplace.json` and `plugins/mason-report/.claude-plugin/plugin.json`
 - [ ] `git tag vX.Y.Z` and push (a marketplace's `github` source type can pin a specific tag/branch via `ref`)
 
 ### License

@@ -1,6 +1,6 @@
 {
-  "name": "mason-recap",
-  "version": "0.1.9",
+  "name": "mason-report",
+  "version": "0.2.0",
   "private": true,
   "description": "Local, hooks-based observability plugin for Claude Code. Reconstructs how Claude handled a request from observed hook/transcript evidence only, separating observed facts, inferred interpretation, and unknowns.",
   "license": "MIT",
@@ -13,6 +13,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fe-hyunsu/mason-recap"
+    "url": "https://github.com/fe-hyunsu/mason-report"
   }
 }

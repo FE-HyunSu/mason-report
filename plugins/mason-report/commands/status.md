@@ -1,11 +1,11 @@
 ---
-description: mason-recap 플러그인의 로그 수집 상태(위치, 최근 이벤트, 마스킹 적용 여부, 로그 크기 등)를 표시합니다.
+description: mason-report 플러그인의 로그 수집 상태(위치, 최근 이벤트, 마스킹 적용 여부, 로그 크기 등)를 표시합니다.
 allowed-tools: Bash
 ---
 
 # 목표
 
-이 프로젝트에서 mason-recap가 실제로 로그를 수집하고 있는지, 어디에 저장하는지, 마스킹이
+이 프로젝트에서 mason-report가 실제로 로그를 수집하고 있는지, 어디에 저장하는지, 마스킹이
 적용되고 있는지를 진단한다.
 
 # 절차
@@ -22,7 +22,7 @@ allowed-tools: Bash
 # 출력 형식
 
 ```markdown
-# Mason Recap Status
+# Mason Report Status
 
 - 플러그인 활성화 여부: (이 명령이 실행되었다는 사실 자체가 플러그인이 로드되어 있음을 의미함)
 - 로그 저장 위치: <logRoot>

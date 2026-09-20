@@ -17,12 +17,12 @@ const {
   findPromptBySessionAndTimestamp,
   eventsForTurn,
   buildStatus,
-  isMasonRecapInvocation,
+  isMasonReportInvocation,
   isTaskNotification,
-} = require('../plugins/mason-recap/scripts/read-events')
+} = require('../plugins/mason-report/scripts/read-events')
 
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'mason-recap-read-test-'))
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'mason-report-read-test-'))
 }
 
 function cleanup(dir) {
@@ -121,12 +121,12 @@ test('findLastPrompts falls back to 1 for an invalid count (zero, negative, non-
   }
 })
 
-test('isMasonRecapInvocation recognizes a /mason-recap: slash command as the prompt text', () => {
-  assert.equal(isMasonRecapInvocation({ data: { prompt: '/mason-recap:latest 2' } }), true)
-  assert.equal(isMasonRecapInvocation({ data: { prompt: '  /mason-recap:all' } }), true)
-  assert.equal(isMasonRecapInvocation({ data: { prompt: 'fix the off-by-one bug in utils.js' } }), false)
-  assert.equal(isMasonRecapInvocation({ data: {} }), false)
-  assert.equal(isMasonRecapInvocation({}), false)
+test('isMasonReportInvocation recognizes a /mason-report: slash command as the prompt text', () => {
+  assert.equal(isMasonReportInvocation({ data: { prompt: '/mason-report:latest 2' } }), true)
+  assert.equal(isMasonReportInvocation({ data: { prompt: '  /mason-report:all' } }), true)
+  assert.equal(isMasonReportInvocation({ data: { prompt: 'fix the off-by-one bug in utils.js' } }), false)
+  assert.equal(isMasonReportInvocation({ data: {} }), false)
+  assert.equal(isMasonReportInvocation({}), false)
 })
 
 test('isTaskNotification recognizes a background Agent completion notification as the prompt text', () => {
@@ -137,11 +137,11 @@ test('isTaskNotification recognizes a background Agent completion notification a
   assert.equal(isTaskNotification({}), false)
 })
 
-test('findLastPrompts excludes the plugin\'s own /mason-recap: invocations from the turn list', () => {
+test('findLastPrompts excludes the plugin\'s own /mason-report: invocations from the turn list', () => {
   const events = [
     { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:00:00.000Z', data: { prompt: 'first real turn' } },
     { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:10:00.000Z', data: { prompt: 'second real turn' } },
-    { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:20:00.000Z', data: { prompt: '/mason-recap:latest 2' } },
+    { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:20:00.000Z', data: { prompt: '/mason-report:latest 2' } },
   ]
   const last2 = findLastPrompts(events, 2)
   assert.equal(last2.length, 2)
@@ -173,10 +173,10 @@ test('findLastPrompts returns fewer than requested when the log has fewer turns'
   assert.equal(result[0].data.prompt, 'only')
 })
 
-test('listPrompts returns prompts newest-first and excludes /mason-recap: invocations', () => {
+test('listPrompts returns prompts newest-first and excludes /mason-report: invocations', () => {
   const events = [
     { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:00:00.000Z', data: { prompt: 'first' } },
-    { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:10:00.000Z', data: { prompt: '/mason-recap:select' } },
+    { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:10:00.000Z', data: { prompt: '/mason-report:select' } },
     { sessionId: 'a', event: 'UserPromptSubmit', timestamp: '2026-01-01T00:20:00.000Z', data: { prompt: 'second' } },
   ]
   const result = listPrompts(events, 20)
@@ -230,17 +230,17 @@ test('findPromptBySessionAndTimestamp finds the exact turn and returns null othe
 test('CLI: last-turns [n] reports requestedCount/returnedCount and turns in chronological order', () => {
   const dir = makeTempDir()
   try {
-    fs.mkdirSync(path.join(dir, '.mason-recap', 'events'), { recursive: true })
-    writeEventsFile(dir, path.join('.mason-recap', 'events', 'sess-a.jsonl'), [
+    fs.mkdirSync(path.join(dir, '.mason-report', 'events'), { recursive: true })
+    writeEventsFile(dir, path.join('.mason-report', 'events', 'sess-a.jsonl'), [
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p1', data: { prompt: 'first' } },
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:01.000Z', event: 'Stop', sessionId: 'sess-a', promptId: 'p1', data: {} },
       { schemaVersion: 1, timestamp: '2026-01-01T00:01:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p2', data: { prompt: 'second' } },
       { schemaVersion: 1, timestamp: '2026-01-01T00:01:01.000Z', event: 'Stop', sessionId: 'sess-a', promptId: 'p2', data: {} },
-      // The invocation of /mason-recap:latest itself must never be counted as a turn.
-      { schemaVersion: 1, timestamp: '2026-01-01T00:02:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p3', data: { prompt: '/mason-recap:latest 2' } },
+      // The invocation of /mason-report:latest itself must never be counted as a turn.
+      { schemaVersion: 1, timestamp: '2026-01-01T00:02:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p3', data: { prompt: '/mason-report:latest 2' } },
     ])
 
-    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-recap', 'scripts', 'read-events.js')
+    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-report', 'scripts', 'read-events.js')
 
     // Requesting more turns than exist: falls back to however many are there.
     const result5 = spawnSync(process.execPath, [scriptPath, 'last-turns', '5'], {
@@ -267,17 +267,17 @@ test('CLI: last-turns [n] reports requestedCount/returnedCount and turns in chro
   }
 })
 
-test('CLI: list-prompts [n] returns prompts newest-first with totalAvailable, excluding /mason-recap: invocations', () => {
+test('CLI: list-prompts [n] returns prompts newest-first with totalAvailable, excluding /mason-report: invocations', () => {
   const dir = makeTempDir()
   try {
-    fs.mkdirSync(path.join(dir, '.mason-recap', 'events'), { recursive: true })
-    writeEventsFile(dir, path.join('.mason-recap', 'events', 'sess-a.jsonl'), [
+    fs.mkdirSync(path.join(dir, '.mason-report', 'events'), { recursive: true })
+    writeEventsFile(dir, path.join('.mason-report', 'events', 'sess-a.jsonl'), [
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p1', data: { prompt: 'first' } },
       { schemaVersion: 1, timestamp: '2026-01-01T00:01:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p2', data: { prompt: 'second' } },
-      { schemaVersion: 1, timestamp: '2026-01-01T00:02:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p3', data: { prompt: '/mason-recap:select' } },
+      { schemaVersion: 1, timestamp: '2026-01-01T00:02:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p3', data: { prompt: '/mason-report:select' } },
     ])
 
-    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-recap', 'scripts', 'read-events.js')
+    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-report', 'scripts', 'read-events.js')
 
     const result = spawnSync(process.execPath, [scriptPath, 'list-prompts', '10'], {
       encoding: 'utf8',
@@ -297,14 +297,14 @@ test('CLI: list-prompts [n] returns prompts newest-first with totalAvailable, ex
 test('CLI: turn <sessionId> <timestamp> returns the correlated bundle for that exact prompt, or an error if not found', () => {
   const dir = makeTempDir()
   try {
-    fs.mkdirSync(path.join(dir, '.mason-recap', 'events'), { recursive: true })
-    writeEventsFile(dir, path.join('.mason-recap', 'events', 'sess-a.jsonl'), [
+    fs.mkdirSync(path.join(dir, '.mason-report', 'events'), { recursive: true })
+    writeEventsFile(dir, path.join('.mason-report', 'events', 'sess-a.jsonl'), [
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:00.000Z', event: 'UserPromptSubmit', sessionId: 'sess-a', promptId: 'p1', data: { prompt: 'first' } },
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:01.000Z', event: 'PreToolUse', sessionId: 'sess-a', promptId: 'p1', data: { toolName: 'Bash' } },
       { schemaVersion: 1, timestamp: '2026-01-01T00:00:02.000Z', event: 'Stop', sessionId: 'sess-a', promptId: 'p1', data: {} },
     ])
 
-    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-recap', 'scripts', 'read-events.js')
+    const scriptPath = path.join(__dirname, '..', 'plugins', 'mason-report', 'scripts', 'read-events.js')
 
     const found = spawnSync(process.execPath, [scriptPath, 'turn', 'sess-a', '2026-01-01T00:00:00.000Z'], {
       encoding: 'utf8',
@@ -360,8 +360,8 @@ test('buildStatus reports a clear warning when no events have been captured yet'
 test('buildStatus aggregates session count, last event, and masking stats', () => {
   const dir = makeTempDir()
   try {
-    fs.mkdirSync(path.join(dir, '.mason-recap', 'events'), { recursive: true })
-    writeEventsFile(dir, path.join('.mason-recap', 'events', 'sess-a.jsonl'), [
+    fs.mkdirSync(path.join(dir, '.mason-report', 'events'), { recursive: true })
+    writeEventsFile(dir, path.join('.mason-report', 'events', 'sess-a.jsonl'), [
       {
         schemaVersion: 1,
         timestamp: '2026-01-01T00:00:00.000Z',

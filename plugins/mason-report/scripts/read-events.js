@@ -2,7 +2,7 @@
 'use strict'
 
 /**
- * Read-only query helper over the .mason-recap/events JSONL logs. Invoked
+ * Read-only query helper over the .mason-report/events JSONL logs. Invoked
  * directly (not as a hook) by the plugin's slash commands via Bash, e.g.:
  *
  *   node "${CLAUDE_PLUGIN_ROOT}/scripts/read-events.js" status
@@ -88,14 +88,14 @@ function byTimestampAsc(a, b) {
 }
 
 // A UserPromptSubmit whose prompt text is itself an invocation of one of this
-// plugin's own slash commands (e.g. "/mason-recap:latest 2") is a request to
+// plugin's own slash commands (e.g. "/mason-report:latest 2") is a request to
 // *produce* a report, not a turn to report on — it should never show up as
 // one of the "last N turns" being analyzed.
-const MASON_RECAP_INVOCATION_PATTERN = /^\s*\/mason-recap:/i
+const MASON_REPORT_INVOCATION_PATTERN = /^\s*\/mason-report:/i
 
-function isMasonRecapInvocation(promptEvent) {
+function isMasonReportInvocation(promptEvent) {
   const text = promptEvent && promptEvent.data && typeof promptEvent.data.prompt === 'string' ? promptEvent.data.prompt : ''
-  return MASON_RECAP_INVOCATION_PATTERN.test(text)
+  return MASON_REPORT_INVOCATION_PATTERN.test(text)
 }
 
 // Claude Code delivers a background Agent's completion as a synthetic
@@ -143,7 +143,7 @@ function findLastPrompts(events, n) {
   const count = Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
   const prompts = events
     .filter((ev) => ev.event === 'UserPromptSubmit')
-    .filter((ev) => !isMasonRecapInvocation(ev))
+    .filter((ev) => !isMasonReportInvocation(ev))
     .filter((ev) => !isTaskNotification(ev))
     .sort(byTimestampAsc)
   return prompts.slice(-count)
@@ -157,17 +157,17 @@ function findLastPrompt(events) {
 
 /**
  * Newest-first list of observed UserPromptSubmit events across all sessions,
- * for turn *browsing* (e.g. `/mason-recap:select` letting the user pick one
+ * for turn *browsing* (e.g. `/mason-report:select` letting the user pick one
  * to analyze) — as opposed to `findLastPrompts`, which returns turns already
  * chosen for direct analysis, oldest-first. Excludes this plugin's own
- * `/mason-recap:*` invocations, same as `findLastPrompts`. `n` defaults to 20
+ * `/mason-report:*` invocations, same as `findLastPrompts`. `n` defaults to 20
  * and is coerced to a positive integer, same fallback rule as elsewhere.
  */
 function listPrompts(events, n) {
   const count = Number.isFinite(n) && n > 0 ? Math.floor(n) : 20
   const prompts = events
     .filter((ev) => ev.event === 'UserPromptSubmit')
-    .filter((ev) => !isMasonRecapInvocation(ev))
+    .filter((ev) => !isMasonReportInvocation(ev))
     .filter((ev) => !isTaskNotification(ev))
     .sort(byTimestampAsc)
   return prompts.slice(-count).reverse()
@@ -341,7 +341,7 @@ function main() {
       const requestedCount = arg ? parseInt(arg, 10) : 20
       const events = readAllEvents(paths.events)
       const totalAvailable = events.filter(
-        (ev) => ev.event === 'UserPromptSubmit' && !isMasonRecapInvocation(ev) && !isTaskNotification(ev)
+        (ev) => ev.event === 'UserPromptSubmit' && !isMasonReportInvocation(ev) && !isTaskNotification(ev)
       ).length
       const prompts = listPrompts(events, requestedCount)
       printJSON({
@@ -392,7 +392,7 @@ module.exports = {
   findPromptBySessionAndTimestamp,
   eventsForTurn,
   buildStatus,
-  isMasonRecapInvocation,
+  isMasonReportInvocation,
   isTaskNotification,
   SUPPORTED_HOOK_EVENTS,
 }

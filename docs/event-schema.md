@@ -1,7 +1,7 @@
 # Event Schema
 
-mason-recap는 Claude Code 공식 Hook 이벤트의 원본 페이로드를 그대로 저장하지 않는다.
-`plugins/mason-recap/scripts/capture-event.js`가 이벤트별 allowlist로 필요한 필드만
+mason-report는 Claude Code 공식 Hook 이벤트의 원본 페이로드를 그대로 저장하지 않는다.
+`plugins/mason-report/scripts/capture-event.js`가 이벤트별 allowlist로 필요한 필드만
 추출하고, 마스킹을 거친 뒤 JSONL 한 줄로 append한다.
 
 ## 공통 봉투(envelope)
@@ -25,7 +25,7 @@ mason-recap는 Claude Code 공식 Hook 이벤트의 원본 페이로드를 그�
   적고 있다. 그러나 **이 문서 기재 내용은 실측으로 반증됐다**: 실제 v2.1.178 설치본(VS Code
   확장, Agent SDK 백엔드)에서 `SessionStart` 이후 발생한 모든 이벤트(`UserPromptSubmit`,
   `PreToolUse`, `PostToolUse` 등)에 `promptId`가 정상적으로 채워지는 것을 2026-09-06에
-  직접 확인했다(mason-recap 플러그인을 실제로 설치해 `.mason-recap/events/`에 기록된
+  직접 확인했다(mason-report 플러그인을 실제로 설치해 `.mason-report/events/`에 기록된
   로그를 직접 열어본 결과). 즉 이 필드는 문서에 적힌 것보다 더 이른 버전부터 채워지거나,
   최소한 클라이언트 표면(터미널 vs VS Code 확장 vs Agent SDK)에 따라 문서와 다르게 동작할
   수 있다. 정확한 최소 지원 버전은 여전히 불확실하므로, `promptId`가 채워지지 않는 경우를

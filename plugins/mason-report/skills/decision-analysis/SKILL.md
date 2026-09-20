@@ -1,12 +1,12 @@
 ---
 name: decision-analysis
-description: mason-recap가 수집한 Hook/transcript 로그를 분석하여, 관찰된 사실(observed)과 추정(inferred)과 확인 불가(unknown)를 분리한 Mason Recap Report를 만드는 절차. Claude Code 실행 과정을 재구성하거나, "왜 이렇게 했는지" 설명하거나, Skill/Rule 적용 여부를 검증할 때 사용한다.
+description: mason-report가 수집한 Hook/transcript 로그를 분석하여, 관찰된 사실(observed)과 추정(inferred)과 확인 불가(unknown)를 분리한 Mason Report를 만드는 절차. Claude Code 실행 과정을 재구성하거나, "왜 이렇게 했는지" 설명하거나, Skill/Rule 적용 여부를 검증할 때 사용한다.
 license: MIT
 ---
 
 # decision-analysis
 
-이 Skill은 `.mason-recap/events/`에 기록된 JSONL 로그(observed evidence)만을 근거로, Claude
+이 Skill은 `.mason-report/events/`에 기록된 JSONL 로그(observed evidence)만을 근거로, Claude
 Code가 하나의 사용자 요청을 어떻게 처리했는지를 재구성하는 절차를 정의한다.
 
 ## 핵심 원칙
@@ -76,14 +76,14 @@ Code가 하나의 사용자 요청을 어떻게 처리했는지를 재구성하�
 - 관련 이벤트가 전혀 관찰되지 않음
 ```
 
-**중요**: mason-recap가 수집하는 Hook 이벤트에는 "Skill이 호출됐다"를 직접 알려주는 전용
+**중요**: mason-report가 수집하는 Hook 이벤트에는 "Skill이 호출됐다"를 직접 알려주는 전용
 이벤트가 없다. 따라서 기본값은 `약한 추정` 이하이며, `확인됨`으로 판정하려면 위
 정의에 맞는 명시적 증거가 실제로 있어야 한다. 증거가 애매하면 등급을 낮춰 잡는다
 (과대 확신 금지).
 
 ## 등급 → 참고용 수치 변환
 
-mason-recap는 Claude의 내부 판단 확률에 접근하지 않는다 — Hook에는 그런 값 자체가
+mason-report는 Claude의 내부 판단 확률에 접근하지 않는다 — Hook에는 그런 값 자체가
 존재하지 않는다. 따라서 아래 %는 실측 확률이 아니라, 위 4단계 등급을 읽기 쉽게 시각화한
 **참고용 수치**일 뿐이다("근사"라는 표현은 오히려 "실제 값에 가까운 계산 결과"처럼
 오해되기 쉬워 쓰지 않는다). 리포트에 %를 표시할 때는 반드시 이 사실을 함께 명시한다.
@@ -153,10 +153,10 @@ mason-recap는 Claude의 내부 판단 확률에 접근하지 않는다 — Hook
   어긋난다.
 
 리포트에서는 이 매핑을 문단이 아니라 표(table)로 제시해 가독성을 확보한다 — 커맨드별
-출력 형식(`/mason-recap:latest`, `/mason-recap:select`, `/mason-recap:all`)이 표 컬럼을 정의한다.
+출력 형식(`/mason-report:latest`, `/mason-report:select`, `/mason-report:all`)이 표 컬럼을 정의한다.
 
 ## 산출물
 
-이 절차의 결과는 호출한 커맨드(`/mason-recap:latest`, `/mason-recap:select`, `/mason-recap:all`)가
+이 절차의 결과는 호출한 커맨드(`/mason-report:latest`, `/mason-report:select`, `/mason-report:all`)가
 정의한 출력 형식에 맞춰 작성한다. 이 Skill 자체는 형식을 강제하지 않고 분석 절차와 등급
 기준만 제공한다.

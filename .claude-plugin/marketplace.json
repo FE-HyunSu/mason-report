@@ -1,26 +1,26 @@
 {
   "$schema": "https://code.claude.com/schemas/marketplace.json",
-  "name": "mason-recap",
+  "name": "mason",
   "owner": {
     "name": "fe-hyunsu"
   },
-  "description": "Marketplace for mason-recap, an observability plugin that reconstructs how Claude Code handled a request from observed hook/transcript evidence.",
-  "version": "0.1.9",
+  "description": "fe-hyunsu's personal marketplace. Currently hosts mason-report, an observability plugin that reconstructs how Claude Code handled a request from observed hook/transcript evidence.",
+  "version": "0.2.0",
   "metadata": {
     "pluginRoot": "./plugins"
   },
   "plugins": [
     {
-      "name": "mason-recap",
-      "source": "./plugins/mason-recap",
-      "displayName": "Mason Recap",
-      "description": "Local, hooks-based observability for Claude Code: captures observable execution evidence (prompts, tool calls, file paths, subagent activity, final answer) into project-local JSONL logs, with sensitive-data masking, and provides /mason-recap:latest, /mason-recap:select, /mason-recap:all, /mason-recap:status, and /mason-recap:readme commands plus a decision-analysis Skill to reconstruct what Claude did and why — always separating observed facts from inferred interpretation and unknowns. No chain-of-thought extraction, no network calls, no external services.",
-      "version": "0.1.9",
+      "name": "mason-report",
+      "source": "./plugins/mason-report",
+      "displayName": "Mason Report",
+      "description": "Local, hooks-based observability for Claude Code: captures observable execution evidence (prompts, tool calls, file paths, subagent activity, final answer) into project-local JSONL logs, with sensitive-data masking, and provides /mason-report:latest, /mason-report:select, /mason-report:all, /mason-report:status, and /mason-report:readme commands plus a decision-analysis Skill to reconstruct what Claude did and why — always separating observed facts from inferred interpretation and unknowns. No chain-of-thought extraction, no network calls, no external services.",
+      "version": "0.2.0",
       "author": {
         "name": "fe-hyunsu"
       },
-      "homepage": "https://github.com/fe-hyunsu/mason-recap",
-      "repository": "https://github.com/fe-hyunsu/mason-recap",
+      "homepage": "https://github.com/fe-hyunsu/mason-report",
+      "repository": "https://github.com/fe-hyunsu/mason-report",
       "license": "MIT",
       "keywords": ["observability", "hooks", "debugging", "transparency", "audit"],
       "category": "productivity"

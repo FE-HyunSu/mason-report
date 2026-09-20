@@ -1,15 +1,15 @@
 ---
-description: 가장 최근에 완료된 사용자 턴(들)을 mason-recap가 수집한 관찰 증거(observed)만으로 재구성하여 Mason Recap Report를 생성합니다. 숫자 인자로 몇 턴을 볼지 지정할 수 있습니다(기본값 1).
+description: 가장 최근에 완료된 사용자 턴(들)을 mason-report가 수집한 관찰 증거(observed)만으로 재구성하여 Mason Report를 생성합니다. 숫자 인자로 몇 턴을 볼지 지정할 수 있습니다(기본값 1).
 argument-hint: "[n]"
 allowed-tools: Bash, Read
 ---
 
 # 목표
 
-가장 최근에 완료된 사용자 턴(들)에 대해, `.mason-recap/events/`에 기록된 로그만을 근거로
-실행 과정을 재구성한다. 인자를 주지 않으면 가장 최근 턴 1개, 숫자를 주면(`/mason-recap:latest 3`
+가장 최근에 완료된 사용자 턴(들)에 대해, `.mason-report/events/`에 기록된 로그만을 근거로
+실행 과정을 재구성한다. 인자를 주지 않으면 가장 최근 턴 1개, 숫자를 주면(`/mason-report:latest 3`
 처럼) 그 개수만큼의 최근 턴을 시간순으로 보여준다. 최근 턴이 아니라 과거의 특정 턴을
-직접 골라 분석하고 싶으면 `/mason-recap:select`를 대신 사용한다.
+직접 골라 분석하고 싶으면 `/mason-report:select`를 대신 사용한다.
 
 **이 명령은 Claude의 비공개 chain-of-thought를 조회하거나 요구하지 않는다.** 오직 Hook과
 transcript에서 관찰 가능한 사실(호출된 Tool, 읽거나 수정한 파일, 실행한 명령, Subagent 활동,
@@ -30,15 +30,15 @@ transcript에서 관찰 가능한 사실(호출된 Tool, 읽거나 수정한 파
    `promptIdCorrelated`(같은 `promptId`로 명시적으로 연결된 이벤트 — observed 근거로
    취급 가능), `timeWindowCorrelated`(`promptId`가 없어 시간 구간으로만 연결된 이벤트 —
    반드시 inferred/약한 근거로 취급)를 담는다. `last-turns`는 프롬프트 텍스트가
-   `/mason-recap:`로 시작하는 턴(이 플러그인 자신의 커맨드를 호출한 턴, 예: 지금 이
-   커맨드를 실행시킨 `/mason-recap:latest 2` 그 자체)을 이미 제외하고 반환한다 — 리포트
+   `/mason-report:`로 시작하는 턴(이 플러그인 자신의 커맨드를 호출한 턴, 예: 지금 이
+   커맨드를 실행시킨 `/mason-report:latest 2` 그 자체)을 이미 제외하고 반환한다 — 리포트
    생성 요청 자체는 분석 대상 턴이 아니기 때문이다.
 
    `turns`가 빈 배열이면, 아직 수집된 로그가 없다는 사실을 그대로 보고하고 중단한다.
    `returnedCount`가 `requestedCount`보다 작으면, 요청한 개수만큼의 턴이 아직 기록되어
    있지 않다는 점을 리포트에 명시한다(추측으로 채우지 않는다).
 
-2. `plugins/mason-recap/skills/decision-analysis/SKILL.md`에 정의된 분석 절차, Skill 활성화
+2. `plugins/mason-report/skills/decision-analysis/SKILL.md`에 정의된 분석 절차, Skill 활성화
    증거 등급(확인됨 / 강한 추정 / 약한 추정 / 관찰 안 됨), 등급→참고용
    수치 변환, 프롬프트 문구→트리거 매핑 규칙을 각 턴에 그대로 적용한다. 이 Skill의
    절차를 skip하지 말고 각 단계를 실제로 수행한다.
@@ -64,7 +64,7 @@ transcript에서 관찰 가능한 사실(호출된 Tool, 읽거나 수정한 파
 ### 단일 턴 형식 (`returnedCount` == 1)
 
 ```markdown
-# Mason Recap Report
+# Mason Report
 
 > "<사용자 프롬프트 원문 또는 핵심 요약>"
 
@@ -96,7 +96,7 @@ Claude의 비공개 내부 사고과정이 아니다. 표의 %는 등급을 참�
 ### 다중 턴 형식 (`returnedCount` >= 2)
 
 ```markdown
-# Mason Recap Report (최근 <returnedCount>턴)
+# Mason Report (최근 <returnedCount>턴)
 
 <requestedCount > returnedCount인 경우: "요청한 <requestedCount>턴 중 <returnedCount>턴만
 로그에 존재함"을 여기에 명시>

@@ -1,10 +1,10 @@
 ---
-description: mason-recap 플러그인을 사용하는 방법과, 리포트에 나오는 observed/inferred/unknown, 등급, % 표기의 의미를 설명합니다.
+description: mason-report 플러그인을 사용하는 방법과, 리포트에 나오는 observed/inferred/unknown, 등급, % 표기의 의미를 설명합니다.
 ---
 
 # 목표
 
-새로 mason-recap를 접하거나 리포트의 표기(예: "관찰 안 됨 (알수없음)")가 헷갈리는
+새로 mason-report를 접하거나 리포트의 표기(예: "관찰 안 됨 (알수없음)")가 헷갈리는
 사용자에게, 플러그인 사용법과 리포트 표기 기준을 그 자리에서 설명한다. 이 명령은 로그를
 조회하거나 분석하지 않는다 — 순수하게 사용 안내 문서를 출력하는 정적 명령이다.
 
@@ -16,15 +16,15 @@ description: mason-recap 플러그인을 사용하는 방법과, 리포트에 �
 그대로 사용해도 된다. 언어를 임의로 추측하기 위해 OS 로케일이나 국가 정보를 조회하지
 않는다 — 이 대화에서 사용자가 실제로 쓰고 있는 언어를 그대로 따른다. 로그 조회나 계산이
 필요 없으므로 Tool을 호출하지 않는다. 번역 시에도
-`plugins/mason-recap/skills/decision-analysis/SKILL.md`의 정의와 어긋나지 않게 유지한다 —
+`plugins/mason-report/skills/decision-analysis/SKILL.md`의 정의와 어긋나지 않게 유지한다 —
 이 명령의 설명 내용이 그 Skill의 등급 기준을 요약한 것이기 때문이다.
 
 # 출력 형식
 
 ```markdown
-# Mason Recap 사용법
+# Mason Report 사용법
 
-mason-recap는 Claude Code가 요청을 어떻게 처리했는지, **공식 Hook 이벤트로 관찰 가능한
+mason-report는 Claude Code가 요청을 어떻게 처리했는지, **공식 Hook 이벤트로 관찰 가능한
 증거만**을 근거로 재구성해서 보여주는 로컬 관찰 도구다. Claude의 비공개
 chain-of-thought는 조회하지 않는다 — 네트워크 호출도 없다.
 
@@ -32,11 +32,11 @@ chain-of-thought는 조회하지 않는다 — 네트워크 호출도 없다.
 
 | 명령어 | 무엇을 보여주나 |
 |---|---|
-| `/mason-recap:latest [n]` | 가장 최근 완료된 사용자 턴(들)을 자동으로 골라 분석. 기본값 1턴 |
-| `/mason-recap:select [n]` | 최근 프롬프트 목록 중 하나를 직접 골라 그 턴만 분석 |
-| `/mason-recap:all` | 현재 세션 전체를 턴 단위로 요약 |
-| `/mason-recap:status` | 로그 수집이 실제로 되고 있는지, 어디에 저장되는지 진단 |
-| `/mason-recap:readme` | 지금 보고 있는 이 사용법/표기 안내 |
+| `/mason-report:latest [n]` | 가장 최근 완료된 사용자 턴(들)을 자동으로 골라 분석. 기본값 1턴 |
+| `/mason-report:select [n]` | 최근 프롬프트 목록 중 하나를 직접 골라 그 턴만 분석 |
+| `/mason-report:all` | 현재 세션 전체를 턴 단위로 요약 |
+| `/mason-report:status` | 로그 수집이 실제로 되고 있는지, 어디에 저장되는지 진단 |
+| `/mason-report:readme` | 지금 보고 있는 이 사용법/표기 안내 |
 
 ## 리포트에 붙는 태그: observed / inferred / unknown
 
@@ -62,7 +62,7 @@ chain-of-thought는 조회하지 않는다 — 네트워크 호출도 없다.
 | 관찰 안 됨 | 관련 이벤트가 전혀 관찰되지 않음 | 알수없음 (수치로 표기하지 않음) |
 
 **중요 — 자주 오해하는 지점:** `관찰 안 됨 (알수없음)`는 "이 Skill/Rule/Tool이 관여하지
-**않았다**"고 확인된 결과가 아니다. mason-recap가 수집하는 Hook 이벤트에는 "Skill이
+**않았다**"고 확인된 결과가 아니다. mason-report가 수집하는 Hook 이벤트에는 "Skill이
 호출됐다"를 직접 알려주는 전용 이벤트가 없기 때문에, **관여했는지 여부 자체를 판단할
 증거가 로그에 없는 상태**를 뜻한다. 그래서 이 등급에는 "0%" 같은 숫자를 붙이지 않고
 "알수없음"이라고만 적는다 — 숫자를 붙이면 마치 "관여하지 않았음을 측정해서 확인했다"는
@@ -90,7 +90,7 @@ chain-of-thought는 조회하지 않는다 — 네트워크 호출도 없다.
 ## % 표기에 대해
 
 확인됨/강한 추정/약한 추정 표에 나오는 % 숫자(예: "72%")는 Claude
-내부의 실제 판단 확률이 아니다. mason-recap는 그런 값에 접근할 수 없다 — Hook에는
+내부의 실제 판단 확률이 아니다. mason-report는 그런 값에 접근할 수 없다 — Hook에는
 애초에 그런 값이 존재하지 않는다. 위 등급을 사람이 읽기 쉽게 시각화한 **참고용
 수치**일 뿐이며("근사"라는 표현은 오히려 "실측에 가까운 계산값"처럼 오해되기 쉬워 쓰지
 않는다), 구간 안에서의 구체적 숫자는 계산된 값이 아니라 표현적 장치다. 그래서 리포트에는
@@ -101,6 +101,6 @@ chain-of-thought는 조회하지 않는다 — 네트워크 호출도 없다.
 ## 더 자세한 기준
 
 정확한 판정 절차와 등급 정의는
-`plugins/mason-recap/skills/decision-analysis/SKILL.md`에 있다. 리포트 내용이 이 안내와
+`plugins/mason-report/skills/decision-analysis/SKILL.md`에 있다. 리포트 내용이 이 안내와
 어긋나 보이면 그쪽이 최신 기준이다.
 ```

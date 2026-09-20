@@ -3,7 +3,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 
-const { redactText, redactDeep, isDotEnvPath, isSensitiveKey } = require('../plugins/mason-recap/scripts/redact')
+const { redactText, redactDeep, isDotEnvPath, isSensitiveKey } = require('../plugins/mason-report/scripts/redact')
 
 test('masks an Anthropic API key', () => {
   const { text, count } = redactText('key is sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789')
