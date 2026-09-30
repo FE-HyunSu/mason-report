@@ -3,6 +3,45 @@
 이 프로젝트는 [Keep a Changelog](https://keepachangelog.com/) 형식을 따르려 하며,
 버전은 태그 기반([릴리스 체크리스트](./README.md#릴리스-체크리스트-태그-기반-버전-관리) 참고)으로 관리한다.
 
+## [0.3.0] - 2026-09-30
+
+### Added
+
+- **완료된 턴의 실제 토큰 사용량을 리포트에 표시한다.** Hook 이벤트에는 애초에 토큰
+  필드가 없으므로, Claude Code 세션 transcript(`transcript_path`)에 실제로 찍힌 API
+  `usage` 값을 그 턴의 시작~`Stop` 시간 구간 안에서 직접 합산한다.
+  `capture-event.js`가 새로 `transcriptPath`를 캡처하고(경로만 저장, 내용은 읽지
+  않음), `read-events.js`의 `computeTokenUsageForTurn`이 메인 대화와 Subagent(Task
+  tool) 토큰을 분리 집계한다. transcript는 비동기로 기록되므로 아직 `Stop`이
+  관찰되지 않은(진행 중인) 턴은 계산하지 않고, 이 기능 이전에 기록된 옛 로그도
+  `transcriptPath`가 없어 계산할 수 없다 — 두 경우 모두 숫자를 지어내지 않고 사유별로
+  "확인 불가"만 남긴다(v0.1.1의 "Considered and rejected" 항목을 실측 가능한 형태로
+  재검토해 뒤집은 결과).
+- **"2. 로그" 표 위에 이벤트 이름 범례를 추가했다.** `PreToolUse`처럼 Claude Code
+  내부 용어인 Hook 이벤트명이 처음 보는 사용자에게 바로 와닿지 않는다는 피드백에
+  따라, 그 표에 실제로 등장하는 이벤트명만 골라 쉬운 말 설명을 표 위에 한 번
+  보여준다.
+
+### Changed
+
+- **리포트 구조를 "1. 입력된 프롬프트 → 2. 로그 → 3. 분석" 세 섹션으로 전면
+  재설계했다.** 기존 "실행 흐름"/"트리거 매핑" 2단 구성을 대체한다. "2. 로그"는
+  같은 `toolUseId`의 `PreToolUse`/`PostToolUse`를 병합하지 않고, 성공/실패 판정도
+  없이 완전히 raw하게(`.mason-report/events/*.jsonl`에 찍힌 그대로) 이벤트를
+  나열한다. "3. 분석"이 결과(성공/실패 + 토큰 사용량) → 프롬프트 문구→트리거 매핑
+  → 최종 답변과 로그 비교를 이 순서로 전부 담당한다 — "무엇이 기록됐는가"(관찰)와
+  "그게 무엇을 뜻하는가"(해석)를 섹션 단위로 분리했다.
+- **리포트 본문이 항상 존댓말(-습니다/-입니다)로 작성된다.** `/mason-report:readme`를
+  포함한 모든 커맨드의 출력에 적용된다(단, 이 규칙은 리포트 출력 자체에만 적용되고
+  `SKILL.md`/커맨드 파일의 내부 설명문에는 적용되지 않는다).
+- **observed/inferred/unknown 태그에 한글 표기를 병기한다** — `(observed, 로그로
+  확인된 것)` / `(inferred, 정황상 추정된 것)` / `(unknown, 로그만으로 확인
+  불가)`(한국어로 작성하는 리포트에 한함). 서술 불릿에서는 태그를 줄바꿈 후 다음
+  줄에 적어 한 줄이 길어지지 않게 했다.
+- `plugins/mason-report/skills/decision-analysis/SKILL.md`,
+  `commands/latest.md`, `select.md`, `all.md`, `readme.md`,
+  `examples/sample-report.md`를 위 변경사항에 맞춰 갱신했다.
+
 ## [0.2.0] - 2026-09-20
 
 ### Changed
