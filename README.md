@@ -106,7 +106,7 @@ claude plugin install mason-report@mason
 /mason-report:latest 3
 ```
 
-Each turn's report has two parts: a short chronological bullet list of what actually happened (tagged `observed`/`inferred`/`unknown`), and a separate **prompt-phrase → trigger mapping table** showing which part of your prompt appears to have caused which Skill/rule/tool to fire, together with an evidence grade and a reference confidence-% band. The grade is one of four levels — shown as Korean words in the report itself (확인됨 "confirmed", 강한 추정 "strongly-inferred", 약한 추정 "weakly-inferred", 관찰 안 됨 "not-observed") regardless of which language you're conversing in. That % is always shown paired with the grade name — it's a visualization of the grade, not a measured probability, since mason-report has no access to Claude's internal decision process. Invoking `/mason-report:latest` (or `/mason-report:select`/`/mason-report:all`) itself is never counted as one of the analyzed turns.
+Each turn's report is built to be read top-down in about 30 seconds: a one-line **summary**, the **request**, a **"what was actually done"** table that groups tool calls into steps (investigate → edit → verify → commit) with duration, call count and token usage, a **request-phrase → action** table showing which part of your prompt led to which action, a short **final-answer check** against the logs, and finally the full **raw event log** folded inside a `<details>` block. Evidence levels are shown as icons — ✅ observed in the logs, 🔶 inferred from behavior, ❔ cannot be determined — explained once at the top of the report instead of being repeated on every line. No confidence-% is shown, since mason-report has no access to Claude's internal decision process and a number would look like a measurement. Invoking `/mason-report:latest` (or `/mason-report:select`/`/mason-report:all`) itself is never counted as one of the analyzed turns.
 
 See [examples/sample-report.md](./examples/sample-report.md) for the output format and a worked example.
 
@@ -170,14 +170,14 @@ While handling one request, Claude Code calls multiple tools, reads or edits fil
 - Bash commands executed (masked)
 - Subagent execution traces (type, identifier)
 - Claude's final answer (masked, length-limited)
-- Reconstructed reasoning built from the above, explicitly labeled `observed` / `inferred` / `unknown`
-- A prompt-phrase → trigger mapping table, with an evidence grade and an approximate confidence-% band per grade (never a measured probability — see below)
+- Reconstructed reasoning built from the above, explicitly marked ✅ observed / 🔶 inferred / ❔ unknown
+- A request-phrase → action table, with an evidence icon per row (no confidence-% — see below)
 
 ### What cannot be confirmed
 
 - Claude's private chain-of-thought, or the model's internal comparison of candidate approaches
 - Any reasoning not reflected in the logs (can be inferred, never confirmed)
-- A real, measured confidence probability behind any judgment — Hooks expose no such value; the %'s shown in reports are an approximate visualization of the four-tier evidence grade, always shown together with the grade name
+- A real, measured confidence probability behind any judgment — Hooks expose no such value, so reports show only evidence icons (✅/🔶/❔), never a %
 - Full file contents, original diffs, or complete raw tool output (not stored, by policy)
 - The full distinction between a Skill file being loaded into context and that Skill's procedure actually having been followed (only estimable via evidence tiers)
 

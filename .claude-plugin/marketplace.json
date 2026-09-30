@@ -5,7 +5,7 @@
     "name": "fe-hyunsu"
   },
   "description": "fe-hyunsu's personal marketplace. Currently hosts mason-report, an observability plugin that reconstructs how Claude Code handled a request from observed hook/transcript evidence.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "metadata": {
     "pluginRoot": "./plugins"
   },
@@ -15,7 +15,7 @@
       "source": "./plugins/mason-report",
       "displayName": "Mason Report",
       "description": "Local, hooks-based observability for Claude Code: captures observable execution evidence (prompts, tool calls, file paths, subagent activity, final answer) into project-local JSONL logs, with sensitive-data masking, and provides /mason-report:latest, /mason-report:select, /mason-report:all, /mason-report:status, and /mason-report:readme commands plus a decision-analysis Skill to reconstruct what Claude did and why — always separating observed facts from inferred interpretation and unknowns. No chain-of-thought extraction, no network calls, no external services.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "fe-hyunsu"
       },

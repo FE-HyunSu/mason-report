@@ -2,7 +2,7 @@
   "$schema": "https://code.claude.com/schemas/plugin.json",
   "name": "mason-report",
   "displayName": "Mason Report",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Observes Claude Code's execution via official hooks and reconstructs, from observed evidence only, how a request was handled. Separates observed facts, inferred reasoning, and unknowns. No chain-of-thought extraction, no network I/O.",
   "author": {
     "name": "fe-hyunsu"
